@@ -139,6 +139,40 @@ html, body {
 .event-card.selected { outline: 2px solid var(--accent-2); }
 
 .event-card h3 { margin: 0 0 4px; font-size: 15px; }
+.event-card .when-line { margin: 4px 0 2px; font-size: 12px; }
+.event-card .when-line span { color: var(--text); }
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-right: 6px;
+  text-transform: uppercase;
+}
+.badge.now { background: #ff4d6d; color: #fff; animation: pulse 1.2s ease-in-out infinite; }
+.badge.next { background: rgba(124, 92, 255, 0.25); color: #c9b8ff; border: 1px solid var(--accent); }
+.badge.tba { background: rgba(154, 160, 184, 0.15); color: var(--muted); border: 1px solid var(--line); }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.card-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 12px;
+  text-decoration: none;
+}
+.action-btn:hover { border-color: var(--accent); }
+.action-btn.tickets { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
 .event-card .meta { font-size: 12px; color: var(--muted); margin: 2px 0; }
 .event-card .cats { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
 .event-card .cat-tag {
@@ -224,8 +258,19 @@ html, body {
   transform: rotate(-45deg);
   border: 2px solid rgba(0, 0, 0, 0.5);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  background: var(--pin-color, #7c5cff);
 }
 .marker-pin span { transform: rotate(45deg); font-size: 15px; line-height: 1; }
+.marker-pin.live { animation: pin-pulse 1.4s ease-in-out infinite; }
+@keyframes pin-pulse {
+  0%, 100% { transform: rotate(-45deg) scale(1); }
+  50% { transform: rotate(-45deg) scale(1.15); }
+}
+.pulse-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #ff4d6d;
+  animation: pulse 1.2s ease-in-out infinite;
+}
 
 /* ---------- Mobile ---------- */
 @media (max-width: 820px) {

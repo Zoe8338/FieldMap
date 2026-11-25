@@ -22,19 +22,13 @@
       </header>
 
       <div class="controls">
-        <input id="search" type="search" placeholder="Search events, cities, venues…" autocomplete="off" />
+        <input id="search" type="search" placeholder="Search events, cities, series…" autocomplete="off" />
         <select id="region-filter" aria-label="Filter by region">
           <option value="all">All regions</option>
-          <option value="norte">Norte (Porto, Maia, Matosinhos…)</option>
-          <option value="centro">Centro (Leiria, Coimbra…)</option>
+          <option value="norte">Norte (Porto, Matosinhos…)</option>
+          <option value="centro">Centro (Leiria, Coimbra, Santarém…)</option>
           <option value="lisboa">Lisboa area</option>
-          <option value="alentejo">Alentejo</option>
-          <option value="algarve">Algarve</option>
         </select>
-        <div class="date-toggle" role="group" aria-label="Time filter">
-          <button id="btn-upcoming" class="active" type="button">Upcoming window</button>
-          <button id="btn-all" type="button">All events</button>
-        </div>
       </div>
 
       <div id="category-filters" class="cat-filters" role="group" aria-label="Category filters"></div>
@@ -43,14 +37,9 @@
       <ul id="event-list" class="event-list"></ul>
 
       <footer class="sidebar-footer">
-        <p><strong>⚠️ Dates are indicative.</strong> These are recurring event series — exact dates and venues move year to year. Always confirm on the official site linked in each card before travelling.</p>
-        <p class="sources">
-          Also track here:
-          <a href="https://www.jogarairsoft.pt/Eventos.html" target="_blank" rel="noopener">JogarAirsoft (live airsoft calendar)</a> ·
-          <a href="https://plairsoft.com/pt/" target="_blank" rel="noopener">Plairsoft</a> ·
-          <a href="https://www.rostercon.com/en/location/portugal-en" target="_blank" rel="noopener">Roster Con (PT conventions)</a> ·
-          <a href="https://aniverso.pt/" target="_blank" rel="noopener">Aniverso</a>
-        </p>
+        <p><strong>⚠️ Live-ish data.</strong> Each series resolves to its <em>current</em> edition, otherwise the <em>next</em> confirmed one. A daily scheduled check re-verifies official pages — detected changes show as “Auto-detected” and must still be confirmed on the official site.</p>
+        <p class="sources"><strong>Fast-moving calendars (airsoft & community):</strong></p>
+        <p class="sources" id="live-portals"></p>
         <p class="sources" id="last-updated"></p>
       </footer>
     </aside>

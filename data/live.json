@@ -1,0 +1,68 @@
+{
+  "_meta": {
+    "lastChecked": "2026-11-25T19:13Z"
+  },
+  "iberanime": {
+    "checked": true,
+    "httpStatus": 200
+  },
+  "comic-con-portugal": {
+    "checked": true,
+    "httpStatus": 200
+  },
+  "lisboa-games-week": {
+    "checked": true,
+    "httpStatus": 200
+  },
+  "leiriacon": {
+    "checked": true,
+    "httpStatus": 200
+  },
+  "amadora-bd": {
+    "checked": true,
+    "httpStatus": 200,
+    "detected": {
+      "startDate": "2026-11-26T00:00:00.000Z",
+      "endDate": "2026-11-26T00:00:00.000Z",
+      "reuseLocation": {
+        "venue": "Centro Cultural Mário Soares area",
+        "city": "Amadora",
+        "lat": 38.75,
+        "lng": -9.2316
+      }
+    }
+  },
+  "maia-bd": {
+    "checked": true,
+    "httpStatus": 200
+  },
+  "coimbra-bd": {
+    "checked": false,
+    "httpStatus": 403
+  },
+  "fantasporto": {
+    "checked": false
+  },
+  "monstra": {
+    "checked": true,
+    "httpStatus": 200
+  },
+  "apacorp-milsim": {
+    "checked": true,
+    "httpStatus": 200,
+    "detected": {
+      "startDate": "2026-11-29T00:00:00.000Z",
+      "endDate": "2026-11-29T00:00:00.000Z",
+      "reuseLocation": {
+        "venue": "Rotating fields",
+        "city": "Nationwide",
+        "lat": 39.2,
+        "lng": -8.6
+      }
+    }
+  },
+  "quebra-dados": {
+    "checked": true,
+    "httpStatus": 200
+  }
+}

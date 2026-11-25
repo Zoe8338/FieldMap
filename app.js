@@ -1,4 +1,7 @@
-/* Geek Events Portugal — map logic (Leaflet + marker clustering). */
+/* FieldMap — map logic (Leaflet + marker clustering).
+   Every event series resolves to a CURRENT edition (happening now), otherwise
+   the NEXT confirmed edition, otherwise a TBA placeholder. data/live.json is
+   fetched at runtime and can surface auto-detected dates for TBA series. */
 
 const CATEGORIES = {
   anime:    { label: "Anime & Manga", color: "#ff5fa2", icon: "🌸" },
@@ -13,8 +16,7 @@ const CATEGORIES = {
 };
 
 const REGIONS = {
-  "iberanime-opo": "norte",
-  "iberanime-lx": "lisboa",
+  iberanime: "centro",
   "comic-con-portugal": "norte",
   "lisboa-games-week": "lisboa",
   leiriacon: "centro",
@@ -24,34 +26,19 @@ const REGIONS = {
   gtc: "centro",
   fantasporto: "norte",
   monstra: "lisboa",
-  "apacorp-bunker": "lisboa",
-  "apacorp-invictus": "lisboa",
-  "apacorp-apex": "alentejo",
-  "apacorp-endurance": "algarve",
-  portoardgamers: "norte",
+  "apacorp-milsim": "all",
+  "quebra-dados": "norte",
 };
 
-/* Typical months for the "Upcoming window" toggle. Events without a
-   confirmed yearly window (season-based airsoft, community gatherings)
-   are always shown. */
-const TYPICAL_MONTHS = {
-  "iberanime-opo": [5, 6],
-  "iberanime-lx": [3, 4, 5],
-  "comic-con-portugal": [9, 10, 11, 12],
-  "lisboa-games-week": [10, 11, 12],
-  leiriacon: [3, 4, 5],
-  "amadora-bd": [9, 10, 11],
-  "maia-bd": [3, 4, 5, 6],
-  "coimbra-bd": [9, 10, 11],
-  fantasporto: [1, 2, 3],
-  monstra: [2, 3],
-};
+const DAY_MS = 24 * 60 * 60 * 1000;
+const MONTHS_PT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+let LIVE = {}; // data/live.json — auto-detected dates per event id
 
 const state = {
   search: "",
   region: "all",
   activeCats: new Set(),
-  upcomingOnly: true,
 };
 
 /* ---------- Map setup ---------- */
@@ -70,15 +57,82 @@ const markers = L.markerClusterGroup({
 });
 map.addLayer(markers);
 
+/* ---------- Status resolution ------------------------------- */
+function resolveStatus(event) {
+  const now = Date.now();
+
+  for (const ed of event.editions) {
+    if (ed.past || ed.tba) continue;
+    const start = new Date(ed.start).getTime();
+    const end = new Date(ed.end || ed.start).getTime() + DAY_MS - 1;
+    if (start <= now && now <= end) {
+      return { kind: "now", edition: ed };
+    }
+  }
+  const future = event.editions
+    .filter((ed) => !ed.past && !ed.tba && new Date(ed.start).getTime() > now)
+    .sort((a, b) => new Date(a.start) - new Date(b.start));
+  if (future.length > 0) {
+    return { kind: "next", edition: future[0] };
+  }
+  const tba = event.editions.find((ed) => ed.tba) || {};
+  const live = LIVE[event.id] && LIVE[event.id].detected;
+  return { kind: "tba", edition: tba, live };
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return `${d.getDate()} ${MONTHS_PT[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function whenText(status, event) {
+  if (status.kind === "now") {
+    return `Happening now — ends ${fmtDate(status.edition.end || status.edition.start)}`;
+  }
+  if (status.kind === "next") {
+    const days = Math.max(0, Math.ceil((new Date(status.edition.start) - Date.now()) / DAY_MS));
+    const range = status.edition.end
+      ? `${fmtDate(status.edition.start)} → ${fmtDate(status.edition.end)}`
+      : fmtDate(status.edition.start);
+    return `${range} · in ${days} day${days === 1 ? "" : "s"}`;
+  }
+  if (status.live && status.live.startDate > Date.now()) {
+    return `Auto-detected: ${fmtDate(new Date(status.live.startDate).toISOString())} — verify on official site`;
+  }
+  return `Next edition: ${status.edition.expected || "to be announced"}`;
+}
+
+function activeLocation(event, status) {
+  if (status.edition && !status.edition.tba && status.edition.lat) return status.edition;
+  if (status.live && status.live.reuseLocation && status.live.reuseLocation.lat) return status.live.reuseLocation;
+  return event.defaultVenue;
+}
+
+function ticketsUrl(event, status) {
+  return (status.edition && status.edition.ticketsUrl) || event.ticketsUrl || null;
+}
+
+function badge(text, cls) {
+  return `<span class="badge ${cls}">${text}</span>`;
+}
+
+function badgeHtml(status) {
+  if (status.kind === "now") return badge("● HAPPENING NOW", "now");
+  if (status.kind === "next") return badge("Next edition", "next");
+  return badge("Dates TBA", "tba");
+}
+
+/* ---------- Markers & popups -------------------------------- */
 function primaryCategory(event) {
   return event.categories.find((c) => CATEGORIES[c]) || "gaming";
 }
 
-function pinIcon(event) {
+function pinIcon(event, status) {
   const cat = CATEGORIES[primaryCategory(event)];
+  const live = status.kind === "now" ? " live-pulse" : "";
   return L.divIcon({
     className: "",
-    html: `<div class="marker-pin" style="background:${cat.color}"><span>${cat.icon}</span></div>`,
+    html: `<div class="marker-pin live${live}" style="--pin-color:${cat.color}"><span>${cat.icon}</span></div>`,
     iconSize: [34, 34],
     iconAnchor: [17, 34],
     popupAnchor: [0, -32],
@@ -86,22 +140,23 @@ function pinIcon(event) {
 }
 
 function popupHtml(event) {
+  const status = resolveStatus(event);
+  const loc = activeLocation(event, status);
   const cats = event.categories
     .filter((c) => CATEGORIES[c])
     .map((c) => `${CATEGORIES[c].icon} ${CATEGORIES[c].label}`)
     .join(" · ");
-  const lat = event.lat;
-  const lng = event.lng;
+  const tickets = ticketsUrl(event, status);
   return `
-    <b>${event.name}</b>
-    <div class="pop-meta">📍 ${event.venue}, ${event.city}</div>
-    <div class="pop-meta">🗓️ ${event.when}</div>
-    <div class="pop-meta">👥 ${event.size}</div>
+    <b>${CATEGORIES[primaryCategory(event)].icon} ${event.name}</b>
+    <div class="pop-meta">${badgeHtml(status)} ${whenText(status, event)}</div>
+    <div class="pop-meta">📍 ${loc.venue}, ${loc.city}</div>
     <div class="pop-meta">${cats}</div>
     <p style="margin:6px 0">${event.desc}</p>
-    <a class="pop-link" href="${event.site}" target="_blank" rel="noopener">Official site ↗</a>
+    ${tickets ? `<a class="pop-link" href="${tickets}" target="_blank" rel="noopener">🎟️ Tickets ↗</a>&nbsp;` : ""}
+    <a class="pop-link" href="${event.newsUrl || event.site}" target="_blank" rel="noopener">📰 News ↗</a>
     &nbsp;
-    <a class="pop-link" href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" rel="noopener">Directions ↗</a>
+    <a class="pop-link" href="https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}" target="_blank" rel="noopener">Directions ↗</a>
   `;
 }
 
@@ -142,56 +197,64 @@ function syncChips() {
 
 /* ---------- Filtering / rendering ---------------------------- */
 function matchesFilters(event) {
-  if (
-    state.activeCats.size > 0 &&
-    !event.categories.some((c) => state.activeCats.has(c))
-  ) {
-    return false;
-  }
-  if (state.region !== "all" && REGIONS[event.id] !== state.region) return false;
-  if (state.upcomingOnly && !isUpcoming(event)) return false;
+  if (state.activeCats.size > 0 && !event.categories.some((c) => state.activeCats.has(c))) return false;
+  if (state.region !== "all" && REGIONS[event.id] !== state.region && REGIONS[event.id] !== "all") return false;
   if (state.search) {
     const q = state.search.toLowerCase();
-    const haystack = `${event.name} ${event.city} ${event.venue} ${event.desc}`.toLowerCase();
+    const haystack = `${event.name} ${event.city} ${event.desc}`.toLowerCase();
     if (!haystack.includes(q)) return false;
   }
   return true;
 }
 
-function isUpcoming(event) {
-  const months = TYPICAL_MONTHS[event.id];
-  if (!months) return true;
-  return months.includes(new Date().getMonth() + 1);
-}
+const STATUS_ORDER = { now: 0, next: 1, tba: 2 };
 
 function render() {
   markers.clearLayers();
   const listEl = document.getElementById("event-list");
   listEl.innerHTML = "";
 
-  const visible = EVENTS.filter(matchesFilters);
+  const visible = EVENTS
+    .filter(matchesFilters)
+    .map((event) => ({ event, status: resolveStatus(event) }))
+    .sort((a, b) => {
+      const rank = STATUS_ORDER[a.status.kind] - STATUS_ORDER[b.status.kind];
+      if (rank !== 0) return rank;
+      if (a.status.edition.start && b.status.edition.start) {
+        return new Date(a.status.edition.start) - new Date(b.status.edition.start);
+      }
+      return a.event.name.localeCompare(b.event.name);
+    });
 
-  for (const event of visible) {
-    const marker = L.marker([event.lat, event.lng], { icon: pinIcon(event) })
+  for (const { event, status } of visible) {
+    const cat = CATEGORIES[primaryCategory(event)];
+    const loc = activeLocation(event, status);
+    const marker = L.marker([loc.lat, loc.lng], { icon: pinIcon(event, status) })
       .bindPopup(popupHtml(event))
       .on("click", () => selectEvent(event.id, false));
     marker._eventId = event.id;
     markers.addLayer(marker);
 
-    const cat = CATEGORIES[primaryCategory(event)];
+    const tickets = ticketsUrl(event, status);
+    const when = whenText(status, event)
+      + (status.edition && !status.edition.tba && status.edition.note ? ` — ${status.edition.note}` : "");
     const li = document.createElement("li");
     li.className = "event-card";
     li.id = `card-${event.id}`;
     li.style.borderLeftColor = cat.color;
     li.innerHTML = `
       <h3>${cat.icon} ${event.name}</h3>
-      <p class="meta">📍 ${event.city}</p>
-      <p class="meta">🗓️ ${event.when}</p>
+      <p class="when-line">${badgeHtml(status)} <span>${when}</span></p>
+      <p class="meta">📍 ${loc.venue}, ${loc.city}</p>
       <div class="cats">${event.categories
         .filter((c) => CATEGORIES[c])
         .map((c) => `<span class="cat-tag" style="background:${CATEGORIES[c].color}">${CATEGORIES[c].label}</span>`)
         .join("")}</div>
-      <a class="site-link" href="${event.site}" target="_blank" rel="noopener">Official site ↗</a>
+      <div class="card-actions">
+        ${tickets ? `<a class="action-btn tickets" href="${tickets}" target="_blank" rel="noopener">🎟️ Tickets</a>` : ""}
+        <a class="action-btn" href="${event.newsUrl || event.site}" target="_blank" rel="noopener">📰 News</a>
+        <a class="action-btn" href="${event.site}" target="_blank" rel="noopener">🔗 Site</a>
+      </div>
     `;
     li.addEventListener("click", (ev) => {
       if (ev.target.closest("a")) return;
@@ -203,7 +266,7 @@ function render() {
   document.getElementById("result-count").textContent =
     visible.length === 0
       ? "No events match — try clearing filters."
-      : `${visible.length} event${visible.length === 1 ? "" : "s"} shown`;
+      : `${visible.length} series shown · sorted: happening now, next dates, TBA`;
 }
 
 function selectEvent(eventId, fly) {
@@ -216,8 +279,10 @@ function selectEvent(eventId, fly) {
   const card = document.getElementById(`card-${eventId}`);
   if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
 
+  const status = resolveStatus(event);
+  const loc = activeLocation(event, status);
   if (fly) {
-    map.flyTo([event.lat, event.lng], 11, { duration: 0.8 });
+    map.flyTo([loc.lat, loc.lng], 11, { duration: 0.8 });
   }
   markers.eachLayer((layer) => {
     if (layer._eventId === eventId) {
@@ -237,21 +302,6 @@ document.getElementById("region-filter").addEventListener("change", (e) => {
   render();
 });
 
-const btnUpcoming = document.getElementById("btn-upcoming");
-const btnAll = document.getElementById("btn-all");
-btnUpcoming.addEventListener("click", () => {
-  state.upcomingOnly = true;
-  btnUpcoming.classList.add("active");
-  btnAll.classList.remove("active");
-  render();
-});
-btnAll.addEventListener("click", () => {
-  state.upcomingOnly = false;
-  btnAll.classList.add("active");
-  btnUpcoming.classList.remove("active");
-  render();
-});
-
 document.getElementById("list-toggle").addEventListener("click", () => {
   document.getElementById("sidebar").classList.toggle("open");
 });
@@ -265,11 +315,35 @@ legendEl.innerHTML =
       ([key, cat]) =>
         `<div class="row"><span class="dot" style="background:${cat.color}"></span>${cat.icon} ${cat.label}</div>`
     )
-    .join("");
+    .join("") +
+  '<div class="row"><span class="pulse-dot"></span> Happening now</div>';
 
 /* ---------- Init ---------------------------------------------- */
-document.getElementById("last-updated").textContent =
-  "Data last reviewed: " + new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" }) +
-  ". Found something missing? Add it to data.js — each event is 15 lines of JSON.";
+function initFooter() {
+  const el = document.getElementById("last-updated");
+  const checked = LIVE._meta && LIVE._meta.lastChecked;
+  el.textContent =
+    "Event series resolve to their CURRENT edition, otherwise the NEXT confirmed one. " +
+    (checked ? `Sources last auto-checked: ${checked}. ` : "") +
+    "Dates can move — confirm on the official site. Add series in data.js.";
+}
 
-render();
+function initPortals() {
+  const wrap = document.getElementById("live-portals");
+  if (!wrap) return;
+  wrap.innerHTML = LIVE_PORTALS.map(
+    (p) => `<a href="${p.url}" target="_blank" rel="noopener">${p.name}</a>`
+  ).join(" · ");
+}
+
+fetch("data/live.json", { cache: "no-store" })
+  .then((r) => (r.ok ? r.json() : {}))
+  .then((json) => {
+    LIVE = json || {};
+  })
+  .catch(() => {})
+  .finally(() => {
+    initFooter();
+    initPortals();
+    render();
+  });
