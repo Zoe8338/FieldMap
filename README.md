@@ -13,13 +13,27 @@ An interactive map webapp that tracks **geek events across Portugal** — anime 
 - 🤖 **Daily auto-check**: a scheduled GitHub Action runs `scripts/refresh.mjs`, re-fetches each event's official page, extracts upcoming date ranges, and commits `data/live.json` — TBA series then show "auto-detected" dates (clearly flagged for verification)
 - 🔗 Links to **live calendars** for fast-moving scenes (JogarAirsoft, Plairsoft, Roster Con)
 
-## 🚀 Run it
+## 🐳 Deploy (one command)
 
-No build step, no dependencies — fully static:
+```bash
+docker compose up -d --build
+```
+
+Then open **http://localhost:8080**. That's it — hardened nginx (non-root, unprivileged image), gzip, sane cache rules (`no-store` for `data/live.json`, `no-cache` for the shell, short TTL for assets) and a built-in healthcheck.
+
+Plain `docker run` equivalent:
+
+```bash
+docker build -t fieldmap .
+docker run -d -p 8080:8080 --name fieldmap fieldmap
+```
+
+**CI builds:** a GitHub Actions workflow (`.github/workflows/docker-publish.yml`) builds and publishes `ghcr.io/zoe8338/fieldmap:latest` (plus a sha tag) on every push to `main`, with GHA layer caching — so you can also just `docker run ghcr.io/zoe8338/fieldmap:latest`.
+
+## 🛠️ Local dev (no Docker)
 
 ```bash
 python3 -m http.server 8080    # or just open index.html
-# visit http://localhost:8080
 ```
 
 ## 🗂️ Project structure
@@ -33,6 +47,8 @@ python3 -m http.server 8080    # or just open index.html
 | `scripts/refresh.mjs` | Daily date-check scraper (Node 18+, zero deps) |
 | `.github/workflows/refresh-data.yml` | Runs the checker daily and commits `data/live.json` |
 | `data/live.json` | Auto-detected dates snapshot (read by the app at runtime) |
+| `nginx/default.conf` | Serving config inside the container (headers, caching, gzip) |
+| `Dockerfile` / `docker-compose.yml` | One-command deploy (`docker compose up -d --build`) |
 
 ## ➕ Add a series
 
