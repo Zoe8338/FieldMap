@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "lastChecked": "2026-11-25T19:13Z"
+    "lastChecked": "2026-11-26T16:31Z"
   },
   "iberanime": {
     "checked": true,
@@ -22,8 +22,8 @@
     "checked": true,
     "httpStatus": 200,
     "detected": {
-      "startDate": "2026-11-26T00:00:00.000Z",
-      "endDate": "2026-11-26T00:00:00.000Z",
+      "startDate": "2026-11-27T00:00:00.000Z",
+      "endDate": "2026-11-27T00:00:00.000Z",
       "reuseLocation": {
         "venue": "Centro Cultural Mário Soares area",
         "city": "Amadora",
