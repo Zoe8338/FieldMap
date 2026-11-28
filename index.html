@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FieldMap — Geek Events Portugal</title>
+  <meta name="description" content="FieldMap: interactive map of geek events in Portugal — anime, cosplay, gaming, comics, airsoft, tabletop and more." />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>" />
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <header class="sidebar-header">
+        <h1 class="logo">Field<span>Map</span> <small>🇵🇹</small></h1>
+        <p class="tagline">Anime · Cosplay · Gaming · Comics · Airsoft · Tabletop</p>
+      </header>
+
+      <div class="controls">
+        <input id="search" type="search" placeholder="Search events, cities, series…" autocomplete="off" />
+        <select id="region-filter" aria-label="Filter by region">
+          <option value="all">All regions</option>
+          <option value="norte">Norte (Porto, Matosinhos…)</option>
+          <option value="centro">Centro (Leiria, Coimbra, Santarém…)</option>
+          <option value="lisboa">Lisboa area</option>
+        </select>
+      </div>
+
+      <div id="category-filters" class="cat-filters" role="group" aria-label="Category filters"></div>
+
+      <p class="result-count" id="result-count"></p>
+      <ul id="event-list" class="event-list"></ul>
+
+      <footer class="sidebar-footer">
+        <p><strong>⚠️ Live-ish data.</strong> Each series resolves to its <em>current</em> edition, otherwise the <em>next</em> confirmed one. A daily scheduled check re-verifies official pages — detected changes show as “Auto-detected” and must still be confirmed on the official site.</p>
+        <p class="sources"><strong>Fast-moving calendars (airsoft & community):</strong></p>
+        <p class="sources" id="live-portals"></p>
+        <p class="sources" id="last-updated"></p>
+      </footer>
+    </aside>
+
+    <main id="map-wrap">
+      <div id="map"></div>
+      <div id="legend" class="legend"></div>
+      <button id="list-toggle" type="button" aria-label="Toggle event list">☰ Events</button>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

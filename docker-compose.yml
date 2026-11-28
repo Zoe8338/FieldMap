@@ -1,0 +1,8 @@
+services:
+  fieldmap:
+    build: .
+    image: ghcr.io/zoe8338/fieldmap:latest
+    container_name: fieldmap
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
