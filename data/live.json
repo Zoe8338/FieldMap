@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "lastChecked": "2026-11-27T16:17Z"
+    "lastChecked": "2026-11-28T15:10Z"
   },
   "iberanime": {
     "checked": true,
@@ -20,17 +20,7 @@
   },
   "amadora-bd": {
     "checked": true,
-    "httpStatus": 200,
-    "detected": {
-      "startDate": "2026-11-28T00:00:00.000Z",
-      "endDate": "2026-11-28T00:00:00.000Z",
-      "reuseLocation": {
-        "venue": "Centro Cultural Mário Soares area",
-        "city": "Amadora",
-        "lat": 38.75,
-        "lng": -9.2316
-      }
-    }
+    "httpStatus": 200
   },
   "maia-bd": {
     "checked": true,
@@ -49,17 +39,7 @@
   },
   "apacorp-milsim": {
     "checked": true,
-    "httpStatus": 200,
-    "detected": {
-      "startDate": "2026-11-29T00:00:00.000Z",
-      "endDate": "2026-11-29T00:00:00.000Z",
-      "reuseLocation": {
-        "venue": "Rotating fields",
-        "city": "Nationwide",
-        "lat": 39.2,
-        "lng": -8.6
-      }
-    }
+    "httpStatus": 200
   },
   "quebra-dados": {
     "checked": true,
